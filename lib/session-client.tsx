@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const data = await res.json();
         setUser({ email: data.user.email });
         setStatus("authenticated");
+        try { localStorage.setItem("omu_saved", JSON.stringify(input)); } catch {}
         return { ok: true };
       }
       const data = await res.json().catch(() => ({}));
@@ -77,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await fetch("/api/auth/imap", { method: "DELETE" });
     } catch {}
+    try { localStorage.removeItem("omu_saved"); } catch {}
     setUser(null);
     setStatus("unauthenticated");
   }, []);

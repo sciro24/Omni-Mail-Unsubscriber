@@ -24,23 +24,42 @@ function ConnectInner() {
   const email = (params.get("email") ?? "").trim().toLowerCase();
 
   const providerKey = useMemo(() => providerKeyFor(email), [email]);
-  const isOther = providerKey === "other";
 
   const [password, setPassword] = useState("");
-  const [imapHost, setImapHost] = useState("");
-  const [smtpHost, setSmtpHost] = useState("");
-  const [showHosts, setShowHosts] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [autoLoading, setAutoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Email mancante → torna alla home. Già autenticato (password inserita in
-  // passato, cookie valido) → salta direttamente alla dashboard.
   useEffect(() => {
     if (!email) router.replace("/");
   }, [email, router]);
+
   useEffect(() => {
     if (status === "authenticated") router.replace("/dashboard");
   }, [status, router]);
+
+  // Auto-login: se le credenziali sono salvate in localStorage per questa email,
+  // tenta il login silenzioso senza mostrare il form.
+  useEffect(() => {
+    if (status !== "unauthenticated" || !email) return;
+    try {
+      const raw = localStorage.getItem("omu_saved");
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      if (saved?.email !== email) return;
+      setAutoLoading(true);
+      login(saved).then((res) => {
+        if (res.ok) {
+          router.replace("/dashboard");
+        } else {
+          localStorage.removeItem("omu_saved");
+          setAutoLoading(false);
+        }
+      });
+    } catch {
+      localStorage.removeItem("omu_saved");
+    }
+  }, [status, email, login, router]);
 
   const errMsg = (code: string) =>
     ({
@@ -58,26 +77,18 @@ function ConnectInner() {
     }
     setLoading(true);
     setError(null);
-    const res = await login({
-      email,
-      password,
-      ...((showHosts || isOther) && imapHost ? { imapHost } : {}),
-      ...((showHosts || isOther) && smtpHost ? { smtpHost } : {}),
-    });
+    const res = await login({ email, password });
     setLoading(false);
     if (res.ok) {
       router.replace("/dashboard");
     } else {
-      if (res.error === "need-hosts") setShowHosts(true);
       setError(errMsg(res.error));
     }
   };
 
-  if (!email || status === "loading" || status === "authenticated") {
+  if (!email || status === "loading" || status === "authenticated" || autoLoading) {
     return <CenterSpinner />;
   }
-
-  const showHostFields = showHosts || isOther;
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50">
@@ -133,29 +144,6 @@ function ConnectInner() {
               </p>
             </div>
 
-            {showHostFields && (
-              <div className="space-y-3 pt-1">
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">{t("login.imapHost")}</label>
-                  <input
-                    value={imapHost}
-                    onChange={(e) => setImapHost(e.target.value)}
-                    placeholder="imap.example.com"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">{t("login.smtpHost")}</label>
-                  <input
-                    value={smtpHost}
-                    onChange={(e) => setSmtpHost(e.target.value)}
-                    placeholder="smtp.example.com"
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition"
-                  />
-                </div>
-              </div>
-            )}
-
             {error && <p className="text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 leading-snug">{error}</p>}
 
             <button
@@ -171,16 +159,6 @@ function ConnectInner() {
               )}
               {loading ? t("login.connecting") : t("connect.submit")}
             </button>
-
-            {!showHostFields && (
-              <button
-                type="button"
-                onClick={() => setShowHosts(true)}
-                className="w-full text-center text-[11px] text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                {t("login.advanced")}
-              </button>
-            )}
           </form>
 
           {/* Banner: perché app-password */}
