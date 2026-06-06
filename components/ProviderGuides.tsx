@@ -24,7 +24,7 @@ export default function ProviderGuides({ highlight }: { highlight?: string }) {
   return (
     <>
       {/* ── Desktop: horizontal accordion ─────────────────────── */}
-      <div className="hidden lg:flex gap-2" style={{ minHeight: "230px" }}>
+      <div className="hidden lg:flex gap-2" style={{ height: "210px" }}>
         {PROVIDERS.map((p) => {
           const isOpen = open === p.key;
           const isHighlighted = highlight === p.key;
@@ -32,21 +32,17 @@ export default function ProviderGuides({ highlight }: { highlight?: string }) {
             <div
               key={p.key}
               onClick={() => setOpen(isOpen ? null : p.key)}
-              className="relative overflow-hidden rounded-2xl border bg-white cursor-pointer"
+              className="relative overflow-hidden rounded-2xl border bg-white cursor-pointer h-full"
               style={{
                 flex: isOpen ? "4 1 0" : "1 1 0",
                 transition: "flex 0.4s cubic-bezier(0.4,0,0.2,1)",
-                borderColor: isOpen
-                  ? "#93C5FD"
-                  : isHighlighted
-                  ? "#BFDBFE"
-                  : "#E8E4DC",
+                borderColor: isOpen ? "#93C5FD" : isHighlighted ? "#BFDBFE" : "#E8E4DC",
                 minWidth: 0,
               }}
             >
-              {/* Collapsed label */}
+              {/* Collapsed: icon + name centered */}
               <div
-                className="absolute inset-0 flex flex-col items-center pt-4 gap-2 select-none"
+                className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-2 select-none"
                 style={{
                   opacity: isOpen ? 0 : 1,
                   transition: "opacity 0.15s ease",
@@ -59,22 +55,16 @@ export default function ProviderGuides({ highlight }: { highlight?: string }) {
                   {p.mono || <CloudIcon className="w-4 h-4" />}
                 </span>
                 <span
-                  className="text-[10px] font-semibold text-slate-500 text-center leading-tight px-1"
+                  className="text-[10px] font-semibold text-slate-500 text-center leading-tight"
                   style={{ wordBreak: "break-word" }}
                 >
                   {t(`prov.${p.key}.name`)}
                 </span>
-                <svg
-                  className="mt-auto mb-3 w-3 h-3 text-slate-300"
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
               </div>
 
               {/* Expanded content */}
               <div
-                className="flex flex-col h-full p-4"
+                className="flex flex-col h-full p-4 overflow-hidden"
                 style={{
                   opacity: isOpen ? 1 : 0,
                   transition: "opacity 0.2s ease 0.15s",
@@ -83,20 +73,20 @@ export default function ProviderGuides({ highlight }: { highlight?: string }) {
                   animation: isOpen ? "providerReveal 0.25s ease 0.1s both" : "none",
                 }}
               >
-                <div className="flex items-center gap-2.5 mb-3.5">
+                <div className="flex items-center gap-2 mb-2.5 shrink-0">
                   <span
-                    className={`w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br ${p.color} text-white flex items-center justify-center font-bold text-sm`}
+                    className={`w-7 h-7 shrink-0 rounded-xl bg-gradient-to-br ${p.color} text-white flex items-center justify-center font-bold text-xs`}
                   >
-                    {p.mono || <CloudIcon className="w-4 h-4" />}
+                    {p.mono || <CloudIcon className="w-3.5 h-3.5" />}
                   </span>
-                  <span className="font-semibold text-slate-900 text-sm leading-tight">
+                  <span className="font-semibold text-slate-900 text-xs leading-tight">
                     {t(`prov.${p.key}.name`)}
                   </span>
                 </div>
-                <ol className="space-y-2.5 flex-1">
+                <ol className="space-y-1.5 flex-1 overflow-y-auto min-h-0">
                   {["s1", "s2", "s3"].map((s, i) => (
-                    <li key={s} className="flex gap-2 text-xs text-slate-600 leading-relaxed">
-                      <span className="w-5 h-5 shrink-0 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-[11px] mt-px">
+                    <li key={s} className="flex gap-1.5 text-[11px] text-slate-600 leading-snug">
+                      <span className="w-4 h-4 shrink-0 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-[10px] mt-px">
                         {i + 1}
                       </span>
                       <span>{t(`prov.${p.key}.${s}`)}</span>
@@ -108,11 +98,11 @@ export default function ProviderGuides({ highlight }: { highlight?: string }) {
                     href={p.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+                    className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-700 shrink-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {t("prov.openSite")}
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                     </svg>
                   </a>
