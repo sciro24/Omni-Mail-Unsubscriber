@@ -84,7 +84,7 @@ export default function SubscriptionTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100">
-            <th className="px-5 py-3 w-10">
+            <th className="px-3 sm:px-5 py-3 w-10">
               <input
                 type="checkbox"
                 className="rounded border-slate-300 accent-indigo-600"
@@ -94,10 +94,10 @@ export default function SubscriptionTable({
               />
             </th>
             <SortHeader label={t("tbl.sender")} field="name" active={sortField} dir={sortDir} onSort={onSort} align="left" />
-            <SortHeader label={t("tbl.email")} field="count" active={sortField} dir={sortDir} onSort={onSort} align="center" />
-            <SortHeader label={t("tbl.method")} field="method" active={sortField} dir={sortDir} onSort={onSort} align="center" />
-            <SortHeader label={t("tbl.lastEmail")} field="lastReceived" active={sortField} dir={sortDir} onSort={onSort} align="left" />
-            <th className="px-5 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide pr-5">{t("tbl.action")}</th>
+            <SortHeader label={t("tbl.email")} field="count" active={sortField} dir={sortDir} onSort={onSort} align="center" hideOnMobile />
+            <SortHeader label={t("tbl.method")} field="method" active={sortField} dir={sortDir} onSort={onSort} align="center" hideOnMobile />
+            <SortHeader label={t("tbl.lastEmail")} field="lastReceived" active={sortField} dir={sortDir} onSort={onSort} align="left" hideOnMobile />
+            <th className="px-3 sm:px-5 py-3 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.action")}</th>
           </tr>
         </thead>
         <tbody>
@@ -113,7 +113,7 @@ export default function SubscriptionTable({
                   st === "success" ? "bg-emerald-50/40" : isLoading ? "bg-slate-50/60" : "hover:bg-slate-50/70",
                 ].join(" ")}
               >
-                <td className="px-5 py-4">
+                <td className="px-3 sm:px-5 py-4">
                   <input
                     type="checkbox"
                     className="rounded border-slate-300 accent-indigo-600"
@@ -122,30 +122,34 @@ export default function SubscriptionTable({
                     disabled={acted || isLoading}
                   />
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-3 sm:px-5 py-4">
                   <div className="flex items-center gap-3">
                     <Initials name={sub.senderName} />
                     <div className="min-w-0">
-                      <p className="font-medium text-slate-900 truncate max-w-[240px]">{sub.senderName}</p>
-                      <p className="text-xs text-slate-400 truncate max-w-[240px]">{sub.senderEmail}</p>
+                      <p className="font-medium text-slate-900 truncate max-w-[140px] sm:max-w-[240px]">{sub.senderName}</p>
+                      <p className="text-xs text-slate-400 truncate max-w-[140px] sm:max-w-[240px]">{sub.senderEmail}</p>
+                      {/* su mobile mostra count + data inline (colonne nascoste) */}
+                      <p className="text-[11px] text-slate-400 mt-0.5 md:hidden">
+                        {sub.count}× · {relativeDate(sub.lastReceived, t)}
+                      </p>
                     </div>
                   </div>
                 </td>
-                <td className="px-5 py-4 text-center">
+                <td className="px-5 py-4 text-center hidden md:table-cell">
                   <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                     {sub.count}
                   </span>
                 </td>
-                <td className="px-5 py-4 text-center">
+                <td className="px-5 py-4 text-center hidden md:table-cell">
                   <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${METHOD_STYLE[sub.method] ?? METHOD_STYLE.unknown}`}>
                     {METHOD_LABEL[sub.method] ?? sub.method}
                   </span>
                 </td>
-                <td className="px-5 py-4">
+                <td className="px-5 py-4 hidden md:table-cell">
                   <div className="text-slate-600">{relativeDate(sub.lastReceived, t)}</div>
                   <div className="text-xs text-slate-400">{formatDate(sub.lastReceived, lang)}</div>
                 </td>
-                <td className="px-5 py-4 text-right">
+                <td className="px-3 sm:px-5 py-4 text-right">
                   <ActionCell status={st} onClick={() => onUnsubscribe(sub.id)} t={t} />
                 </td>
               </tr>
@@ -158,14 +162,14 @@ export default function SubscriptionTable({
 }
 
 function SortHeader({
-  label, field, active, dir, onSort, align,
+  label, field, active, dir, onSort, align, hideOnMobile,
 }: {
   label: string; field: SortField; active: SortField; dir: SortDir;
-  onSort: (f: SortField) => void; align: "left" | "center";
+  onSort: (f: SortField) => void; align: "left" | "center"; hideOnMobile?: boolean;
 }) {
   const isActive = active === field;
   return (
-    <th className={`px-5 py-3 ${align === "left" ? "text-left" : "text-center"}`}>
+    <th className={`px-3 sm:px-5 py-3 ${align === "left" ? "text-left" : "text-center"} ${hideOnMobile ? "hidden md:table-cell" : ""}`}>
       <button
         onClick={() => onSort(field)}
         className={`group inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${

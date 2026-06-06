@@ -23,11 +23,11 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100">
-            <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.sender")}</th>
-            <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.email")}</th>
-            <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.method")}</th>
-            <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.unsubbed")}</th>
-            <th className="px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide pr-5">{t("tbl.action")}</th>
+            <th className="px-3 sm:px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.sender")}</th>
+            <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">{t("tbl.email")}</th>
+            <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">{t("tbl.method")}</th>
+            <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide hidden sm:table-cell">{t("tbl.unsubbed")}</th>
+            <th className="px-3 sm:px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.action")}</th>
           </tr>
         </thead>
         <tbody>
@@ -39,12 +39,12 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
                 i === entries.length - 1 ? "border-b-0" : "",
               ].join(" ")}
             >
-              <td className="px-5 py-4">
+              <td className="px-3 sm:px-5 py-4">
                 <div className="flex items-center gap-3">
                   <Initials name={e.name} />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="font-medium text-slate-900 truncate max-w-[220px]">{e.name}</p>
+                      <p className="font-medium text-slate-900 truncate max-w-[150px] sm:max-w-[220px]">{e.name}</p>
                       {stillInInbox.has(e.id) && (
                         <span
                           title={t("tbl.oldMail.title")}
@@ -54,21 +54,23 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 truncate max-w-[220px]">{e.email}</p>
+                    <p className="text-xs text-slate-400 truncate max-w-[150px] sm:max-w-[220px]">{e.email}</p>
+                    {/* su mobile: data disiscrizione inline (colonna nascosta) */}
+                    <p className="text-[11px] text-emerald-600 mt-0.5 sm:hidden">✓ {relativeDate(e.unsubscribedAt, t)}</p>
                   </div>
                 </div>
               </td>
-              <td className="px-5 py-4 text-center">
+              <td className="px-5 py-4 text-center hidden md:table-cell">
                 <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                   {e.count}
                 </span>
               </td>
-              <td className="px-5 py-4 text-center">
+              <td className="px-5 py-4 text-center hidden md:table-cell">
                 <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
                   {METHOD_LABEL[e.method] ?? e.method}
                 </span>
               </td>
-              <td className="px-5 py-4">
+              <td className="px-5 py-4 hidden sm:table-cell">
                 <div className="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -77,7 +79,7 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
                 </div>
                 <div className="text-xs text-slate-400">{formatDate(e.unsubscribedAt, lang)}</div>
               </td>
-              <td className="px-5 py-4">
+              <td className="px-3 sm:px-5 py-4">
                 <div className="flex items-center justify-end gap-2">
                   {e.unsubscribeUrl && (
                     <a

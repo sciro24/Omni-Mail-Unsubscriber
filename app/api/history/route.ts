@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSession } from "@/lib/session";
 import { getSupabase, UNSUB_TABLE } from "@/lib/supabase";
 import type { HistoryEntry } from "@/lib/history";
 
@@ -44,8 +44,8 @@ function entryToRow(userEmail: string, e: HistoryEntry): Row {
 }
 
 async function userEmail() {
-  const session = await auth();
-  return session?.user?.email ?? null;
+  const creds = await getSession();
+  return creds?.email ?? null;
 }
 
 // GET → tutte le disiscrizioni dell'utente

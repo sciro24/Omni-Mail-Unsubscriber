@@ -1,5 +1,5 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
+import { useAuth } from "@/lib/session-client";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Subscription, UnsubscribeStatus } from "@/lib/types";
@@ -51,7 +51,7 @@ function isRecent(iso: string, days: number): boolean {
 }
 
 export default function Dashboard() {
-  const { data: session, status } = useSession();
+  const { user, status, logout } = useAuth();
   const router = useRouter();
   const { t, lang } = useI18n();
 
@@ -89,14 +89,23 @@ export default function Dashboard() {
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
-    const res = await fetch("/api/subscriptions", { cache: "no-store" });
-    const data = await res.json();
-    setSubscriptions(data.subscriptions ?? []);
-    setLastScan(new Date());
-    setStatuses(new Map());
-    setLoading(false);
-    setRefreshing(false);
-  }, []);
+    try {
+      const res = await fetch("/api/subscriptions", { cache: "no-store" });
+      // Sessione non valida (cookie scaduto/credenziali rifiutate) → torna al login.
+      if (res.status === 401) {
+        await logout();
+        router.push("/");
+        return;
+      }
+      const data = await res.json();
+      setSubscriptions(data.subscriptions ?? []);
+      setLastScan(new Date());
+      setStatuses(new Map());
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [logout, router]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -165,10 +174,14 @@ export default function Dashboard() {
       unsubscribedAt: new Date().toISOString(),
     }));
 
-    const nextHist: History = { ...history };
-    for (const e of newHistEntries) nextHist[e.id] = e;
-    setHistory(nextHist);
+    // setState FUNZIONALE: con click rapidi più handler partono con la stessa closure
+    // `history` (stale); usando prev evitiamo che un update sovrascriva l'altro.
     if (newHistEntries.length) {
+      setHistory((prev) => {
+        const next = { ...prev };
+        for (const e of newHistEntries) next[e.id] = e;
+        return next;
+      });
       pushHistory(newHistEntries).then((ok) => {
         if (!ok) showToast(t("toast.cloudFail"));
       });
@@ -289,7 +302,7 @@ export default function Dashboard() {
             <span className="font-semibold text-slate-900 text-sm">{t("brand")}</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-xs text-slate-500 hidden md:block">{session?.user?.email}</span>
+            <span className="text-xs text-slate-500 hidden md:block">{user?.email}</span>
             {REPO_URL && (
               <a
                 href={REPO_URL}
@@ -305,7 +318,10 @@ export default function Dashboard() {
             )}
             <LanguageSelector compact />
             <button
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={async () => {
+                await logout();
+                router.push("/");
+              }}
               className="text-xs text-slate-500 hover:text-slate-800 border border-slate-200 hover:border-slate-300 px-3 py-1.5 rounded-lg transition-colors"
             >
               {t("dash.signout")}

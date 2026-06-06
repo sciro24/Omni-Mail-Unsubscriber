@@ -1,14 +1,16 @@
 "use client";
-import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useAuth } from "@/lib/session-client";
 import { REPO_URL } from "@/lib/config";
 import Logo from "@/components/Logo";
 import LanguageSelector from "@/components/LanguageSelector";
+import LoginForm from "@/components/LoginForm";
+import ProviderGuides from "@/components/ProviderGuides";
 
 export default function Home() {
-  const { status } = useSession();
+  const { status } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
 
@@ -18,92 +20,146 @@ export default function Home() {
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-      {/* Top bar: lingua + GitHub */}
-      <div className="flex items-center justify-end gap-2 p-4">
-        {REPO_URL && (
-          <a
-            href={REPO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            title={t("landing.github")}
-            className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 transition-colors"
-          >
-            <GitHubIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">GitHub</span>
-          </a>
-        )}
-        <LanguageSelector />
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center pb-16">
-        <div className="w-full max-w-sm mx-auto px-6">
-          {/* Logo mark */}
-          <div className="flex justify-center mb-8">
-            <Logo className="w-14 h-14" />
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 backdrop-blur-sm bg-white/60 border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Logo className="w-7 h-7" />
+            <span className="font-semibold text-slate-900 text-sm">{t("brand")}</span>
           </div>
-
-          {/* Heading */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight mb-2">{t("brand")}</h1>
-            <p className="text-slate-500 text-base leading-relaxed">{t("landing.tagline")}</p>
+          <div className="flex items-center gap-2">
+            {REPO_URL && (
+              <a
+                href={REPO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={t("landing.github")}
+                className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 transition-colors"
+              >
+                <GitHubIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">GitHub</span>
+              </a>
+            )}
+            <LanguageSelector compact />
           </div>
+        </div>
+      </header>
 
-          {/* Card */}
-          <div className="bg-white rounded-2xl shadow-xl shadow-slate-100 border border-slate-100 p-6">
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              className="w-full flex items-center justify-center gap-3 px-5 py-3 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-all duration-150 text-sm shadow-sm"
-            >
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/>
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/>
-                <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/>
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"/>
-              </svg>
-              {t("landing.google")}
-            </button>
-
-            <div className="flex items-center gap-3 my-3">
-              <span className="h-px flex-1 bg-slate-100" />
-              <span className="text-xs text-slate-400">{t("landing.or")}</span>
-              <span className="h-px flex-1 bg-slate-100" />
+      {/* Hero + login (2 colonne desktop, stack mobile) */}
+      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 pt-10 sm:pt-16 pb-10">
+        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
+          {/* Colonna testo */}
+          <div className="text-center lg:text-left">
+            <div className="flex justify-center lg:justify-start mb-5">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold ring-1 ring-indigo-100">
+                ✉️ {t("landing.free")}
+              </span>
             </div>
-
-            <button
-              onClick={() => signIn("microsoft-entra-id", { callbackUrl: "/dashboard" })}
-              className="w-full flex items-center justify-center gap-3 px-5 py-3 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 font-medium rounded-xl transition-all duration-150 text-sm shadow-sm"
-            >
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 23 23" aria-hidden="true">
-                <path fill="#F25022" d="M1 1h10v10H1z" />
-                <path fill="#7FBA00" d="M12 1h10v10H12z" />
-                <path fill="#00A4EF" d="M1 12h10v10H1z" />
-                <path fill="#FFB900" d="M12 12h10v10H12z" />
-              </svg>
-              {t("landing.microsoft")}
-            </button>
-
-            <p className="mt-4 text-center text-xs text-slate-400 leading-relaxed">
-              {t("landing.privacy1")}
-              <br />
-              {t("landing.privacy2")}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">
+              {t("brand")}
+            </h1>
+            <p className="mt-4 text-base sm:text-lg text-slate-500 leading-relaxed max-w-md mx-auto lg:mx-0">
+              {t("landing.subtitle")}
             </p>
+
+            {/* Feature pills */}
+            <div className="mt-6 flex flex-wrap justify-center lg:justify-start gap-2">
+              {[t("landing.feat1"), t("landing.feat2"), t("landing.feat3")].map((f) => (
+                <span
+                  key={f}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600"
+                >
+                  <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  {f}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {/* Features */}
-          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
+          {/* Colonna login card */}
+          <div className="w-full max-w-sm mx-auto lg:ml-auto">
+            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-7">
+              <h2 className="text-lg font-bold text-slate-900 text-center">{t("landing.signinTitle")}</h2>
+              <p className="text-sm text-slate-400 text-center mt-1 mb-5">{t("landing.signinSub")}</p>
+
+              <LoginForm />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Come funziona */}
+      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 py-10 sm:py-12">
+        <h2 className="text-center text-xl sm:text-2xl font-bold text-slate-900 mb-8">{t("landing.how")}</h2>
+        <div className="grid sm:grid-cols-3 gap-5">
+          {[
+            { n: 1, icon: "🔗", t: t("landing.step1.t"), d: t("landing.step1.d") },
+            { n: 2, icon: "🔍", t: t("landing.step2.t"), d: t("landing.step2.d") },
+            { n: 3, icon: "🚫", t: t("landing.step3.t"), d: t("landing.step3.d") },
+          ].map((s) => (
+            <div key={s.n} className="relative bg-white rounded-2xl border border-slate-200 p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-2xl">{s.icon}</span>
+                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold">
+                  {s.n}
+                </span>
+              </div>
+              <h3 className="font-semibold text-slate-900 mb-1.5">{s.t}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{s.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Provider supportati + mini-guide */}
+      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 py-10 sm:py-12">
+        <div className="text-center mb-8 max-w-2xl mx-auto">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{t("prov.title")}</h2>
+          <p className="mt-2 text-sm text-slate-500 leading-relaxed">{t("prov.sub")}</p>
+        </div>
+        <ProviderGuides />
+      </section>
+
+      {/* Perché una password per app */}
+      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 pb-14">
+        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-7 sm:p-10 text-white">
+          <div className="text-center mb-7 max-w-2xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-bold">{t("why2.title")}</h2>
+            <p className="mt-2 text-sm text-indigo-100 leading-relaxed">{t("why2.sub")}</p>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-6">
             {[
-              { icon: "🔍", label: t("landing.feat1") },
-              { icon: "⚡", label: t("landing.feat2") },
-              { icon: "🔒", label: t("landing.feat3") },
-            ].map((f) => (
-              <div key={f.label} className="flex flex-col items-center gap-1.5">
-                <span className="text-xl">{f.icon}</span>
-                <span className="text-xs text-slate-400 leading-tight">{f.label}</span>
+              { t: t("why2.a.t"), d: t("why2.a.d") },
+              { t: t("why2.b.t"), d: t("why2.b.d") },
+              { t: t("why2.c.t"), d: t("why2.c.d") },
+            ].map((s) => (
+              <div key={s.t}>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <h3 className="font-semibold">{s.t}</h3>
+                </div>
+                <p className="text-sm text-indigo-100 leading-relaxed">{s.d}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
+
+      <footer className="mt-auto py-6 text-center text-xs text-slate-400">
+        {t("brand")}
+        {REPO_URL && (
+          <>
+            {" · "}
+            <a href={REPO_URL} target="_blank" rel="noopener noreferrer" className="hover:text-slate-600 underline decoration-dotted">
+              GitHub
+            </a>
+          </>
+        )}
+      </footer>
     </main>
   );
 }

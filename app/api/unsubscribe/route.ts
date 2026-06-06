@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { sendUnsubscribeEmail } from "@/lib/mail";
+import { getSession } from "@/lib/session";
+import { sendUnsubscribeEmail } from "@/lib/imap";
+
+export const maxDuration = 60;
 
 type UnsubscribePayload = {
   items: {
@@ -46,12 +48,11 @@ async function oneClickPost(url: string): Promise<boolean> {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.accessToken) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const creds = await getSession();
+  if (!creds) {
+    return NextResponse.json({ error: "reauth" }, { status: 401 });
   }
 
-  const provider = session.provider;
   const { items }: UnsubscribePayload = await req.json();
 
   const results: Result[] = await Promise.all(
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
           }
 
           case "mailto": {
-            const sent = await sendUnsubscribeEmail(provider, session.accessToken!, item.unsubscribeMailto!);
+            const sent = await sendUnsubscribeEmail(creds, item.unsubscribeMailto!);
             if (sent) return { id: item.id, status: "success" };
             return { id: item.id, status: "failed", error: "Invio email non riuscito" };
           }
