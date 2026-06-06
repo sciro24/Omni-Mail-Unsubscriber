@@ -92,9 +92,9 @@ function ConnectInner() {
         </div>
       </header>
 
-      <section className="flex-1 max-w-5xl w-full mx-auto px-5 sm:px-6 py-8 sm:py-12 grid lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-        {/* Colonna form */}
-        <div className="w-full max-w-md mx-auto lg:mx-0">
+      <div className="flex-1 w-full">
+        {/* Form centrato */}
+        <section className="max-w-xl mx-auto px-5 sm:px-6 pt-8 sm:pt-12 pb-8">
           <h1 className="text-2xl font-bold text-slate-900">{t("connect.title")}</h1>
 
           {/* Account selezionato */}
@@ -200,15 +200,19 @@ function ConnectInner() {
             </svg>
             {t("login.secure")}
           </p>
-        </div>
+        </section>
 
-        {/* Colonna tutorial provider */}
-        <div className="w-full">
-          <h2 className="text-sm font-semibold text-slate-900 mb-1">{t("connect.tutorialTitle")}</h2>
-          <p className="text-xs text-slate-500 mb-4">{t("prov.sub")}</p>
-          <ProviderGuides highlight={providerKey} />
-        </div>
-      </section>
+        {/* Guide provider — full width, tutti aperti */}
+        <section className="border-t border-slate-100 bg-white/60 px-5 sm:px-8 py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-5">
+              <h2 className="text-base font-semibold text-slate-900">{t("connect.tutorialTitle")}</h2>
+              <p className="text-xs text-slate-500 mt-0.5">{t("prov.sub")}</p>
+            </div>
+            <ProviderGuides allOpen highlight={providerKey} />
+          </div>
+        </section>
+      </div>
     </main>
   );
 }
