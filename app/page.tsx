@@ -1,22 +1,35 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { useAuth } from "@/lib/session-client";
 import { REPO_URL } from "@/lib/config";
 import Logo from "@/components/Logo";
 import LanguageSelector from "@/components/LanguageSelector";
-import LoginForm from "@/components/LoginForm";
-import ProviderGuides from "@/components/ProviderGuides";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function Home() {
   const { status } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
 
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (status === "authenticated") router.push("/dashboard");
   }, [status, router]);
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(value)) {
+      setError(t("home.emailErr"));
+      return;
+    }
+    router.push(`/connect?email=${encodeURIComponent(value)}`);
+  };
 
   return (
     <main className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50">
@@ -45,47 +58,64 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero + login (2 colonne desktop, stack mobile) */}
-      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 pt-10 sm:pt-16 pb-10">
-        <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
-          {/* Colonna testo */}
-          <div className="text-center lg:text-left">
-            <div className="flex justify-center lg:justify-start mb-5">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold ring-1 ring-indigo-100">
-                ✉️ {t("landing.free")}
-              </span>
-            </div>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">
-              {t("brand")}
-            </h1>
-            <p className="mt-4 text-base sm:text-lg text-slate-500 leading-relaxed max-w-md mx-auto lg:mx-0">
-              {t("landing.subtitle")}
-            </p>
-
-            {/* Feature pills */}
-            <div className="mt-6 flex flex-wrap justify-center lg:justify-start gap-2">
-              {[t("landing.feat1"), t("landing.feat2"), t("landing.feat3")].map((f) => (
-                <span
-                  key={f}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600"
-                >
-                  <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  {f}
-                </span>
-              ))}
-            </div>
+      {/* Hero centrato + form email */}
+      <section className="flex-1 flex flex-col items-center justify-center px-5 sm:px-6 py-12 sm:py-16">
+        <div className="w-full max-w-lg mx-auto text-center">
+          <div className="flex justify-center mb-6">
+            <Logo className="w-16 h-16" />
           </div>
 
-          {/* Colonna login card */}
-          <div className="w-full max-w-sm mx-auto lg:ml-auto">
-            <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-6 sm:p-7">
-              <h2 className="text-lg font-bold text-slate-900 text-center">{t("landing.signinTitle")}</h2>
-              <p className="text-sm text-slate-400 text-center mt-1 mb-5">{t("landing.signinSub")}</p>
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold ring-1 ring-indigo-100 mb-5">
+            ✉️ {t("landing.free")}
+          </span>
 
-              <LoginForm />
+          <h1 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">
+            Omni Mail Unsubscriber
+          </h1>
+
+          <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed">
+            {t("home.problem")}
+          </p>
+          <p className="mt-1 text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
+            {t("home.solution")}
+          </p>
+
+          {/* Form email-only */}
+          <form onSubmit={onSubmit} className="mt-8 w-full max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <input
+                type="email"
+                autoComplete="email"
+                autoFocus
+                value={email}
+                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                placeholder={t("login.emailPh")}
+                aria-label={t("home.emailLabel")}
+                className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition shadow-sm"
+              />
+              <button
+                type="submit"
+                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all text-sm shadow-sm active:scale-[.99] whitespace-nowrap"
+              >
+                {t("home.emailCta")}
+              </button>
             </div>
+            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+          </form>
+
+          {/* Feature pills */}
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {[t("landing.feat1"), t("landing.feat2"), t("landing.feat3")].map((f) => (
+              <span
+                key={f}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600"
+              >
+                <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                {f}
+              </span>
+            ))}
           </div>
         </div>
       </section>
@@ -110,42 +140,6 @@ export default function Home() {
               <p className="text-sm text-slate-500 leading-relaxed">{s.d}</p>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* Provider supportati + mini-guide */}
-      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 py-10 sm:py-12">
-        <div className="text-center mb-8 max-w-2xl mx-auto">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">{t("prov.title")}</h2>
-          <p className="mt-2 text-sm text-slate-500 leading-relaxed">{t("prov.sub")}</p>
-        </div>
-        <ProviderGuides />
-      </section>
-
-      {/* Perché una password per app */}
-      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 pb-14">
-        <div className="bg-gradient-to-br from-indigo-600 to-violet-600 rounded-3xl p-7 sm:p-10 text-white">
-          <div className="text-center mb-7 max-w-2xl mx-auto">
-            <h2 className="text-xl sm:text-2xl font-bold">{t("why2.title")}</h2>
-            <p className="mt-2 text-sm text-indigo-100 leading-relaxed">{t("why2.sub")}</p>
-          </div>
-          <div className="grid sm:grid-cols-3 gap-6">
-            {[
-              { t: t("why2.a.t"), d: t("why2.a.d") },
-              { t: t("why2.b.t"), d: t("why2.b.d") },
-              { t: t("why2.c.t"), d: t("why2.c.d") },
-            ].map((s) => (
-              <div key={s.t}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <h3 className="font-semibold">{s.t}</h3>
-                </div>
-                <p className="text-sm text-indigo-100 leading-relaxed">{s.d}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

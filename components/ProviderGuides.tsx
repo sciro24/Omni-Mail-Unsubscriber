@@ -17,19 +17,19 @@ const PROVIDERS: Provider[] = [
   { key: "other",   color: "from-emerald-400 to-teal-500",  mono: "@" },
 ];
 
-export default function ProviderGuides() {
+export default function ProviderGuides({ highlight }: { highlight?: string }) {
   const { t } = useI18n();
-  const [open, setOpen] = useState<string | null>("gmail");
+  const [open, setOpen] = useState<string | null>(highlight ?? "gmail");
 
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid sm:grid-cols-2 gap-3">
       {PROVIDERS.map((p) => {
         const isOpen = open === p.key;
         return (
           <div
             key={p.key}
             className={`rounded-2xl border bg-white transition-all ${
-              isOpen ? "border-indigo-200 shadow-md sm:col-span-2 lg:col-span-1" : "border-slate-200 hover:border-slate-300"
+              isOpen ? "border-indigo-200 shadow-md" : "border-slate-200 hover:border-slate-300"
             }`}
           >
             <button

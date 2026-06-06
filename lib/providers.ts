@@ -34,3 +34,24 @@ export function presetFor(email: string): HostPreset | null {
 export function isKnownProvider(email: string): boolean {
   return presetFor(email) !== null;
 }
+
+// Mappa dominio → chiave guida (per il mini-tutorial app-password lato client).
+const GUIDE_KEY: Record<string, string> = {
+  "gmail.com": "gmail",
+  "googlemail.com": "gmail",
+  "outlook.com": "outlook",
+  "hotmail.com": "outlook",
+  "live.com": "outlook",
+  "msn.com": "outlook",
+  "yahoo.com": "yahoo",
+  "yahoo.it": "yahoo",
+  "icloud.com": "icloud",
+  "me.com": "icloud",
+};
+
+/** Chiave guida del provider dal dominio email: gmail|outlook|yahoo|icloud|other. */
+export function providerKeyFor(email: string): string {
+  const domain = email.split("@")[1]?.toLowerCase().trim();
+  if (!domain) return "other";
+  return GUIDE_KEY[domain] ?? "other";
+}
