@@ -13,7 +13,6 @@ export default function Home() {
   const { status } = useAuth();
   const router = useRouter();
   const { t } = useI18n();
-
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +31,13 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-indigo-50">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 backdrop-blur-sm bg-white/60 border-b border-slate-100">
+    <main className="min-h-screen flex flex-col bg-[#F5F3EE]">
+      {/* Header */}
+      <header className="sticky top-0 z-20 bg-[#F5F3EE]/80 backdrop-blur-sm border-b border-stone-200/70">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <Logo className="w-7 h-7" />
-            <span className="font-semibold text-slate-900 text-sm">{t("brand")}</span>
+          <div className="flex items-center gap-2">
+            <Logo className="w-6 h-6" />
+            <span className="font-semibold text-[#1A1917] text-sm tracking-tight">{t("brand")}</span>
           </div>
           <div className="flex items-center gap-2">
             {REPO_URL && (
@@ -47,9 +46,9 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={t("landing.github")}
-                className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:border-slate-300 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-stone-200 hover:border-stone-300 transition-colors shadow-sm"
               >
-                <GitHubIcon className="w-4 h-4" />
+                <GitHubIcon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">GitHub</span>
               </a>
             )}
@@ -58,31 +57,71 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero centrato + form email */}
-      <section className="flex-1 flex flex-col items-center justify-center px-5 sm:px-6 py-12 sm:py-16">
-        <div className="w-full max-w-lg mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <Logo className="w-16 h-16" />
-          </div>
+      {/* Hero */}
+      <section className="flex-1 flex flex-col items-center justify-center px-5 sm:px-6 py-16 sm:py-24 relative overflow-hidden">
+        {/* Dot grid */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: "radial-gradient(circle, rgba(0,0,0,0.065) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+            maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 90%)",
+            WebkitMaskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 90%)",
+          }}
+        />
+        {/* Colour wash */}
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(ellipse 60% 55% at 25% 45%, rgba(96,165,250,0.07) 0%, transparent 70%), radial-gradient(ellipse 50% 50% at 75% 55%, rgba(52,211,153,0.06) 0%, transparent 70%)",
+          }}
+        />
 
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold ring-1 ring-indigo-100 mb-5">
-            ✉️ {t("landing.free")}
+        <div className="w-full max-w-xl mx-auto text-center relative z-10">
+          {/* Pill badge */}
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-stone-200 text-xs font-medium text-slate-600 mb-7 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {t("landing.free")}
           </span>
 
-          <h1 className="text-3xl sm:text-5xl font-bold text-slate-900 tracking-tight leading-[1.1]">
-            Omni Mail Unsubscriber
+          {/* Heading */}
+          <h1 className="text-[2.6rem] sm:text-[3.5rem] font-bold text-[#1A1917] tracking-tight leading-[1.06] mb-5">
+            Omni Mail<br />
+            <span className="relative inline-block">
+              Unsubscriber
+              {/* Wavy underline accent */}
+              <svg
+                aria-hidden
+                className="absolute left-0 -bottom-1.5 w-full"
+                height="5"
+                viewBox="0 0 300 5"
+                fill="none"
+                preserveAspectRatio="none"
+              >
+                <path
+                  d="M0 3.5 Q37.5 0.5 75 3 Q112.5 5.5 150 3 Q187.5 0.5 225 3 Q262.5 5.5 300 2.5"
+                  stroke="#F97316"
+                  strokeWidth="2.5"
+                  fill="none"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
           </h1>
 
-          <p className="mt-5 text-base sm:text-lg text-slate-600 leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-md mx-auto">
             {t("home.problem")}
           </p>
-          <p className="mt-1 text-base sm:text-lg font-medium text-slate-900 leading-relaxed">
+          <p className="mt-1 text-base sm:text-lg font-semibold text-[#1A1917] leading-relaxed max-w-md mx-auto mb-9">
             {t("home.solution")}
           </p>
 
-          {/* Form email-only */}
-          <form onSubmit={onSubmit} className="mt-8 w-full max-w-md mx-auto">
-            <div className="flex flex-col sm:flex-row gap-2.5">
+          {/* Email form */}
+          <form onSubmit={onSubmit} className="w-full max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row gap-2.5 p-1.5 bg-white rounded-2xl border border-stone-200 shadow-md shadow-stone-200/50">
               <input
                 type="email"
                 autoComplete="email"
@@ -91,24 +130,24 @@ export default function Home() {
                 onChange={(e) => { setEmail(e.target.value); setError(null); }}
                 placeholder={t("login.emailPh")}
                 aria-label={t("home.emailLabel")}
-                className="flex-1 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-300 transition shadow-sm"
+                className="flex-1 px-3.5 py-2.5 bg-transparent text-sm text-[#1A1917] placeholder:text-slate-400 focus:outline-none"
               />
               <button
                 type="submit"
-                className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition-all text-sm shadow-sm active:scale-[.99] whitespace-nowrap"
+                className="px-5 py-2.5 bg-[#1A1917] hover:bg-[#2d2b28] active:scale-[.98] text-white font-semibold rounded-xl transition-all text-sm whitespace-nowrap"
               >
                 {t("home.emailCta")}
               </button>
             </div>
-            {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+            {error && <p className="mt-2 text-xs text-red-600 text-center">{error}</p>}
           </form>
 
           {/* Feature pills */}
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
             {[t("landing.feat1"), t("landing.feat2"), t("landing.feat3")].map((f) => (
               <span
                 key={f}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-600"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/70 border border-stone-200 text-xs font-medium text-slate-600"
               >
                 <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -121,29 +160,29 @@ export default function Home() {
       </section>
 
       {/* Come funziona */}
-      <section className="max-w-6xl mx-auto w-full px-5 sm:px-6 py-10 sm:py-12">
-        <h2 className="text-center text-xl sm:text-2xl font-bold text-slate-900 mb-8">{t("landing.how")}</h2>
-        <div className="grid sm:grid-cols-3 gap-5">
+      <section className="max-w-5xl mx-auto w-full px-5 sm:px-6 py-12 sm:py-16">
+        <h2 className="text-center text-lg sm:text-xl font-bold text-[#1A1917] mb-8 tracking-tight">
+          {t("landing.how")}
+        </h2>
+        <div className="grid sm:grid-cols-3 rounded-2xl overflow-hidden border border-stone-200 shadow-sm divide-y sm:divide-y-0 sm:divide-x divide-stone-200">
           {[
-            { n: 1, icon: "🔗", t: t("landing.step1.t"), d: t("landing.step1.d") },
-            { n: 2, icon: "🔍", t: t("landing.step2.t"), d: t("landing.step2.d") },
-            { n: 3, icon: "🚫", t: t("landing.step3.t"), d: t("landing.step3.d") },
+            { n: "01", emoji: "✉️", title: t("landing.step1.t"), desc: t("landing.step1.d") },
+            { n: "02", emoji: "🔍", title: t("landing.step2.t"), desc: t("landing.step2.d") },
+            { n: "03", emoji: "🚫", title: t("landing.step3.t"), desc: t("landing.step3.d") },
           ].map((s) => (
-            <div key={s.n} className="relative bg-white rounded-2xl border border-slate-200 p-6">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-2xl">{s.icon}</span>
-                <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-600 text-white text-xs font-bold">
-                  {s.n}
-                </span>
+            <div key={s.n} className="bg-white p-7 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl leading-none">{s.emoji}</span>
+                <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">{s.n}</span>
               </div>
-              <h3 className="font-semibold text-slate-900 mb-1.5">{s.t}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{s.d}</p>
+              <h3 className="font-semibold text-[#1A1917] text-sm leading-snug">{s.title}</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
-      <footer className="mt-auto py-6 text-center text-xs text-slate-400">
+      <footer className="py-6 text-center text-xs text-stone-400">
         {t("brand")}
         {REPO_URL && (
           <>
