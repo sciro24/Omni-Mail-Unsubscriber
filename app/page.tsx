@@ -58,7 +58,7 @@ export default function Home() {
       </header>
 
       {/* Hero */}
-      <section className="flex-1 flex flex-col items-center justify-center px-5 sm:px-6 py-16 sm:py-24 relative overflow-hidden">
+      <section className="flex flex-col items-center justify-center px-5 sm:px-6 py-10 sm:py-16 relative overflow-hidden">
         {/* Dot grid */}
         <div
           aria-hidden
@@ -160,7 +160,7 @@ export default function Home() {
       </section>
 
       {/* Come funziona */}
-      <section className="max-w-5xl mx-auto w-full px-5 sm:px-6 py-12 sm:py-16">
+      <section className="max-w-5xl mx-auto w-full px-5 sm:px-6 py-8 sm:py-10">
         <h2 className="text-center text-lg sm:text-xl font-bold text-[#1A1917] mb-8 tracking-tight">
           {t("landing.how")}
         </h2>
