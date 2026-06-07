@@ -11,11 +11,19 @@ import {
   type History,
   type HistoryEntry,
 } from "@/lib/history";
+import {
+  fetchKept,
+  pushKept,
+  deleteKept,
+  type Kept,
+  type KeptEntry,
+} from "@/lib/kept";
 import { classify, type CategoryKey } from "@/lib/classify";
 import { useI18n, LOCALE } from "@/lib/i18n";
 import { REPO_URL } from "@/lib/config";
 import SubscriptionTable, { type SortField, type SortDir } from "@/components/SubscriptionTable";
 import RemovedTable from "@/components/RemovedTable";
+import KeptTable from "@/components/KeptTable";
 import BulkActionBar from "@/components/BulkActionBar";
 import Toolbar from "@/components/Toolbar";
 import CategoryCards, { type FilterKey } from "@/components/CategoryCards";
@@ -25,16 +33,15 @@ import Logo from "@/components/Logo";
 import LanguageSelector from "@/components/LanguageSelector";
 
 type ModalState = { open: boolean; count: number; names: string[]; manual: number };
+type FailItem = { id: string; name: string; email: string; url?: string };
+type FailModalState = { open: boolean; items: FailItem[] };
 
-type Tab = "active" | "removed";
+type Tab = "active" | "removed" | "kept";
 
-// Oltre questa finestra senza nuove email, un mittente è considerato "non più iscritto"
-// (le vecchie email restano in casella anche dopo una disiscrizione passata).
 const ACTIVE_WINDOW_DAYS = 90;
 
 const TWO_LEVEL_SLD = new Set(["co", "com", "org", "net", "gov", "edu", "ac", "go", "gob"]);
 
-/** Estrae il dominio radice (eTLD+1) togliendo sottodomini tipo news./email./mail. */
 function rootDomain(host: string): string {
   const parts = host.toLowerCase().split(".").filter(Boolean);
   if (parts.length <= 2) return parts.join(".");
@@ -62,8 +69,10 @@ export default function Dashboard() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [statuses, setStatuses] = useState<Map<string, UnsubscribeStatus>>(new Map());
   const [history, setHistory] = useState<History>({});
+  const [kept, setKept] = useState<Kept>({});
   const [toast, setToast] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>({ open: false, count: 0, names: [], manual: 0 });
+  const [failModal, setFailModal] = useState<FailModalState>({ open: false, items: [] });
 
   const [tab, setTab] = useState<Tab>("active");
   const [query, setQuery] = useState("");
@@ -75,10 +84,10 @@ export default function Dashboard() {
     if (status === "unauthenticated") router.push("/");
   }, [status, router]);
 
-  // Carica lo storico dal DB (Supabase) appena autenticato → cross-device.
   useEffect(() => {
     if (status !== "authenticated") return;
     fetchHistory().then(setHistory);
+    fetchKept().then(setKept);
   }, [status]);
 
   const showToast = useCallback((msg: string) => {
@@ -91,7 +100,6 @@ export default function Dashboard() {
     else setLoading(true);
     try {
       const res = await fetch("/api/subscriptions", { cache: "no-store" });
-      // Sessione non valida (cookie scaduto/credenziali rifiutate) → torna al login.
       if (res.status === 401) {
         await logout();
         router.push("/");
@@ -141,9 +149,8 @@ export default function Dashboard() {
       results = items.map((it) => ({ id: it.id, status: "failed" }));
     }
 
-    // --- effetti collaterali FUORI dagli updater di stato (no doppio fire StrictMode) ---
     const okIds: string[] = [];
-    const failIds: string[] = [];
+    const failItems: FailItem[] = [];
     const newEntries: Subscription[] = [];
     let manual = 0;
 
@@ -158,11 +165,14 @@ export default function Dashboard() {
         okIds.push(r.id);
         if (sub) newEntries.push(sub);
       } else {
-        failIds.push(r.id);
+        if (sub) {
+          const domain = sub.senderEmail.split("@")[1];
+          const fallbackUrl = domain ? `https://${rootDomain(domain)}` : undefined;
+          failItems.push({ id: sub.id, name: sub.senderName, email: sub.senderEmail, url: r.url ?? fallbackUrl });
+        }
       }
     }
 
-    // history: costruisci le nuove voci, aggiorna stato locale (ottimistico) e DB
     const newHistEntries: HistoryEntry[] = newEntries.map((sub) => ({
       id: sub.id,
       email: sub.senderEmail,
@@ -174,8 +184,6 @@ export default function Dashboard() {
       unsubscribedAt: new Date().toISOString(),
     }));
 
-    // setState FUNZIONALE: con click rapidi più handler partono con la stessa closure
-    // `history` (stale); usando prev evitiamo che un update sovrascriva l'altro.
     if (newHistEntries.length) {
       setHistory((prev) => {
         const next = { ...prev };
@@ -187,28 +195,75 @@ export default function Dashboard() {
       });
     }
 
-    // statuses: rimuovi le riuscite (vanno in Rimosse), segna le fallite
     setStatuses((prev) => {
       const next = new Map(prev);
       okIds.forEach((id) => next.delete(id));
-      failIds.forEach((id) => next.set(id, "failed"));
+      failItems.forEach((fi) => next.set(fi.id, "failed"));
       return next;
     });
     setSelected(new Set());
 
     const ok = okIds.length;
-    const fail = failIds.length;
 
-    // Popup di conferma quando almeno una è andata a buon fine
     if (ok > 0) {
       setModal({ open: true, count: ok, names: newEntries.map((s) => s.senderName), manual });
-    } else if (fail) {
-      showToast(fail === 1 ? t("toast.failOne") : t("toast.failMany", { n: fail }));
+    }
+    if (failItems.length > 0) {
+      setFailModal({ open: true, items: failItems });
     }
   };
 
+  const handleMoveFailedToRemoved = (items: FailItem[]) => {
+    const subs = items.map((fi) => subscriptions.find((s) => s.id === fi.id)).filter(Boolean) as Subscription[];
+    const entries: HistoryEntry[] = subs.map((sub) => ({
+      id: sub.id,
+      email: sub.senderEmail,
+      name: sub.senderName,
+      count: sub.count,
+      method: sub.method,
+      lastReceived: sub.lastReceived,
+      unsubscribeUrl: sub.unsubscribeUrl,
+      unsubscribedAt: new Date().toISOString(),
+    }));
+    if (entries.length) {
+      setHistory((prev) => {
+        const next = { ...prev };
+        for (const e of entries) next[e.id] = e;
+        return next;
+      });
+      pushHistory(entries);
+    }
+    setStatuses((prev) => {
+      const next = new Map(prev);
+      items.forEach((fi) => next.delete(fi.id));
+      return next;
+    });
+    setFailModal({ open: false, items: [] });
+  };
+
+  const handleKeep = (id: string) => {
+    const sub = subscriptions.find((s) => s.id === id);
+    if (!sub) return;
+    const entry: KeptEntry = {
+      id: sub.id,
+      email: sub.senderEmail,
+      name: sub.senderName,
+      keptAt: new Date().toISOString(),
+    };
+    setKept((prev) => ({ ...prev, [id]: entry }));
+    pushKept(entry);
+  };
+
+  const handleUnkeep = (entry: KeptEntry) => {
+    setKept((prev) => {
+      const next = { ...prev };
+      delete next[entry.id];
+      return next;
+    });
+    deleteKept(entry.id);
+  };
+
   const handleResubscribe = (entry: HistoryEntry) => {
-    // Apri la HOMEPAGE del servizio (dominio radice), non sottopagine/preference center.
     const domain = entry.email.split("@")[1];
     const url = domain ? `https://${rootDomain(domain)}` : null;
     if (url) window.open(url, "_blank");
@@ -232,14 +287,11 @@ export default function Dashboard() {
     clearAllHistory();
   };
 
-  // ---- Liste derivate ----
-  // Base: non disiscritte in questa app (history).
+  // ---- Derived lists ----
   const activeBase = useMemo(
-    () => subscriptions.filter((s) => !history[s.id]),
-    [subscriptions, history]
+    () => subscriptions.filter((s) => !history[s.id] && !kept[s.id]),
+    [subscriptions, history, kept]
   );
-  // Iscrizioni "vive": email recente entro la finestra di 90 giorni. Le altre = probabilmente
-  // già disiscritto in passato, restano solo le vecchie mail in casella → le nascondiamo.
   const activeAll = useMemo(
     () => activeBase.filter((s) => isRecent(s.lastReceived, ACTIVE_WINDOW_DAYS)),
     [activeBase]
@@ -259,10 +311,31 @@ export default function Dashboard() {
     [history]
   );
 
+  const keptEntries = useMemo(
+    () =>
+      Object.values(kept).sort(
+        (a, b) => new Date(b.keptAt).getTime() - new Date(a.keptAt).getTime()
+      ),
+    [kept]
+  );
+
   const currentIds = useMemo(() => new Set(subscriptions.map((s) => s.id)), [subscriptions]);
   const stillInInbox = useMemo(
     () => new Set(removedEntries.filter((e) => currentIds.has(e.id)).map((e) => e.id)),
     [removedEntries, currentIds]
+  );
+  // Mittenti con email ricevute DOPO la disiscrizione → disiscrizione probabilmente fallita
+  const newAfterUnsub = useMemo(
+    () =>
+      new Set(
+        removedEntries
+          .filter((e) => {
+            const sub = subscriptions.find((s) => s.id === e.id);
+            return sub && new Date(sub.lastReceived) > new Date(e.unsubscribedAt);
+          })
+          .map((e) => e.id)
+      ),
+    [removedEntries, subscriptions]
   );
 
   const visibleActive = useMemo(() => {
@@ -334,7 +407,6 @@ export default function Dashboard() {
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="text-xl font-bold text-slate-900">{t("dash.title")}</h1>
-            <p className="text-xs text-slate-400 mt-0.5">{scanLabel}</p>
           </div>
           <button
             onClick={() => load(true)}
@@ -352,6 +424,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-1 mb-5 bg-slate-100 p-1 rounded-xl w-fit">
           <TabButton active={tab === "active"} onClick={() => setTab("active")} label={t("dash.tab.active")} count={activeAll.length} />
           <TabButton active={tab === "removed"} onClick={() => setTab("removed")} label={t("dash.tab.removed")} count={removedEntries.length} />
+          <TabButton active={tab === "kept"} onClick={() => setTab("kept")} label={t("dash.tab.kept")} count={keptEntries.length} />
         </div>
 
         {tab === "active" ? (
@@ -372,12 +445,13 @@ export default function Dashboard() {
                 onSort={handleSort}
                 onSelect={setSelected}
                 onUnsubscribe={(id) => handleUnsubscribe([id])}
+                onKeep={handleKeep}
               />
             )}
           </>
-        ) : (
+        ) : tab === "removed" ? (
           <>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-slate-500">{t("dash.removed.count", { n: removedEntries.length })}</p>
               {removedEntries.length > 0 && (
                 <button
@@ -388,10 +462,35 @@ export default function Dashboard() {
                 </button>
               )}
             </div>
+            <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 mb-4">
+              <svg className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-xs text-blue-700 leading-relaxed">{t("dash.removed.disclaimer")}</p>
+            </div>
             {removedEntries.length === 0 ? (
               <EmptyState emoji="📭" title={t("dash.empty.removed.title")} subtitle={t("dash.empty.removed.sub")} />
             ) : (
-              <RemovedTable entries={removedEntries} stillInInbox={stillInInbox} onResubscribe={handleResubscribe} />
+              <RemovedTable entries={removedEntries} stillInInbox={stillInInbox} newAfterUnsub={newAfterUnsub} onResubscribe={handleResubscribe} />
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm text-slate-500">{t("dash.kept.count", { n: keptEntries.length })}</p>
+              {keptEntries.length > 0 && (
+                <button
+                  onClick={() => { setKept({}); keptEntries.forEach((e) => deleteKept(e.id)); }}
+                  className="text-xs text-slate-400 hover:text-red-500 underline decoration-dotted transition-colors"
+                >
+                  {t("dash.kept.clear")}
+                </button>
+              )}
+            </div>
+            {keptEntries.length === 0 ? (
+              <EmptyState emoji="🔖" title={t("dash.empty.kept.title")} subtitle={t("dash.empty.kept.sub")} />
+            ) : (
+              <KeptTable entries={keptEntries} onUnkeep={handleUnkeep} />
             )}
           </>
         )}
@@ -416,9 +515,19 @@ export default function Dashboard() {
           setTab("removed");
         }}
       />
+
+      <FailModal
+        open={failModal.open}
+        items={failModal.items}
+        onClose={() => setFailModal({ open: false, items: [] })}
+        onMoveToRemoved={() => handleMoveFailedToRemoved(failModal.items)}
+        t={t}
+      />
     </div>
   );
 }
+
+// ---- Sub-components ----
 
 function TabButton({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
   return (
@@ -444,6 +553,87 @@ function EmptyState({ title, subtitle, emoji }: { title: string; subtitle: strin
       <div className="text-4xl mb-3">{emoji}</div>
       <h3 className="text-slate-900 font-semibold mb-1">{title}</h3>
       <p className="text-slate-500 text-sm">{subtitle}</p>
+    </div>
+  );
+}
+
+import type { TFunc } from "@/lib/i18n";
+
+function FailModal({
+  open,
+  items,
+  onClose,
+  onMoveToRemoved,
+  t,
+}: {
+  open: boolean;
+  items: FailItem[];
+  onClose: () => void;
+  onMoveToRemoved: () => void;
+  t: TFunc;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ animation: "fadeBackdrop .2s ease-out both" }}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-7"
+        style={{ animation: "popIn .2s ease-out both" }}
+      >
+        {/* Icon */}
+        <div className="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center mb-4">
+          <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+        </div>
+
+        <h2 className="text-lg font-bold text-slate-900 mb-1">{t("fail.title")}</h2>
+        <p className="text-sm text-slate-500 mb-4 leading-relaxed">{t("fail.body")}</p>
+
+        {/* Failed senders list */}
+        <div className="space-y-2 mb-5 max-h-48 overflow-y-auto">
+          {items.map((fi) => (
+            <div key={fi.id} className="flex items-center justify-between gap-3 bg-slate-50 rounded-xl px-3.5 py-2.5">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-800 truncate">{fi.name}</p>
+                <p className="text-xs text-slate-400 truncate">{fi.email}</p>
+              </div>
+              {fi.url && (
+                <a
+                  href={fi.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors"
+                >
+                  {t("fail.manual")}
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={onMoveToRemoved}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-colors text-sm"
+          >
+            {t("fail.moveRemoved")}
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition-colors text-sm"
+          >
+            {t("fail.close")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

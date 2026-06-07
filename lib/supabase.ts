@@ -22,3 +22,4 @@ export function getSupabase(): SupabaseClient {
 }
 
 export const UNSUB_TABLE = "unsubscribes";
+export const KEPT_TABLE = "kept";

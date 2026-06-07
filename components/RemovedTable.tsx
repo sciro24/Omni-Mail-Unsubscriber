@@ -5,7 +5,8 @@ import { useI18n, formatDate, relativeDate } from "@/lib/i18n";
 
 type Props = {
   entries: HistoryEntry[];
-  stillInInbox: Set<string>; // id ancora presenti nella casella (email passate non cancellate)
+  stillInInbox: Set<string>;
+  newAfterUnsub: Set<string>; // id con email ricevute DOPO la disiscrizione
   onResubscribe: (entry: HistoryEntry) => void;
 };
 
@@ -16,7 +17,7 @@ const METHOD_LABEL: Record<string, string> = {
   unknown: "?",
 };
 
-export default function RemovedTable({ entries, stillInInbox, onResubscribe }: Props) {
+export default function RemovedTable({ entries, stillInInbox, newAfterUnsub, onResubscribe }: Props) {
   const { t, lang } = useI18n();
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
@@ -25,7 +26,6 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
           <tr className="border-b border-slate-100">
             <th className="px-3 sm:px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.sender")}</th>
             <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">{t("tbl.email")}</th>
-            <th className="px-5 py-3.5 text-center text-xs font-semibold text-slate-400 uppercase tracking-wide hidden md:table-cell">{t("tbl.method")}</th>
             <th className="px-5 py-3.5 text-left text-xs font-semibold text-slate-400 uppercase tracking-wide hidden sm:table-cell">{t("tbl.unsubbed")}</th>
             <th className="px-3 sm:px-5 py-3.5 text-right text-xs font-semibold text-slate-400 uppercase tracking-wide">{t("tbl.action")}</th>
           </tr>
@@ -43,9 +43,16 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
                 <div className="flex items-center gap-3">
                   <Initials name={e.name} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="font-medium text-slate-900 truncate max-w-[150px] sm:max-w-[220px]">{e.name}</p>
-                      {stillInInbox.has(e.id) && (
+                      {newAfterUnsub.has(e.id) ? (
+                        <span
+                          title={t("tbl.newAfterUnsub.title")}
+                          className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-semibold shrink-0 cursor-help"
+                        >
+                          ⚠ {t("tbl.newAfterUnsub")}
+                        </span>
+                      ) : stillInInbox.has(e.id) && (
                         <span
                           title={t("tbl.oldMail.title")}
                           className="px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-500 text-[10px] font-medium shrink-0"
@@ -63,11 +70,6 @@ export default function RemovedTable({ entries, stillInInbox, onResubscribe }: P
               <td className="px-5 py-4 text-center hidden md:table-cell">
                 <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold">
                   {e.count}
-                </span>
-              </td>
-              <td className="px-5 py-4 text-center hidden md:table-cell">
-                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
-                  {METHOD_LABEL[e.method] ?? e.method}
                 </span>
               </td>
               <td className="px-5 py-4 hidden sm:table-cell">

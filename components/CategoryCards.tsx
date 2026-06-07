@@ -73,8 +73,8 @@ export default function CategoryCards({ counts, total, active, onSelect }: Props
               </span>
             </div>
             <p className={`text-sm font-semibold ${isActive ? "text-white" : "text-slate-700"}`}>{t(LABEL_KEY[k])}</p>
-            <p className={`text-xs mt-0.5 ${isActive ? "text-white/70" : "text-slate-400"}`}>
-              {count === 1 ? t("cat.sender") : t("cat.senders")}
+            <p className={`text-xs mt-0.5 leading-snug ${isActive ? "text-white/70" : "text-slate-400"}`}>
+              {t(`cat.${k}.hint`)}
             </p>
           </button>
         );

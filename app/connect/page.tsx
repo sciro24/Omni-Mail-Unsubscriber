@@ -119,7 +119,7 @@ function ConnectInner() {
 
       {/* Two-column layout: form left, guides right */}
       <div className="flex-1 max-w-6xl mx-auto w-full px-5 sm:px-8 pt-10 sm:pt-12 pb-12">
-        <div className="grid lg:grid-cols-[400px_1fr] gap-8 lg:gap-12 items-start">
+        <div className="grid lg:grid-cols-[400px_1fr] gap-8 lg:gap-12">
 
           {/* ── Left: form card ──────────────────────────── */}
           <div>
@@ -238,13 +238,15 @@ function ConnectInner() {
             </div>
           </div>
 
-          {/* ── Right: provider guides ─────────────────── */}
-          <div className="lg:sticky lg:top-[4.5rem]">
-            <div className="mb-4">
+          {/* ── Right: provider guides (vertical accordion, stessa altezza del form) */}
+          <div className="flex flex-col">
+            <div className="mb-3 shrink-0">
               <h2 className="text-sm font-semibold text-[#1A1917]">{t("connect.tutorialTitle")}</h2>
               <p className="text-xs text-slate-500 mt-0.5">{t("prov.sub")}</p>
             </div>
-            <ProviderGuides highlight={providerKey} />
+            <div className="flex-1 min-h-0">
+              <ProviderGuides highlight={providerKey} vertical />
+            </div>
           </div>
 
         </div>
